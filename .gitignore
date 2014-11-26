@@ -36,6 +36,15 @@ MinecraftForge-License.txt
 options.txt
 READEME.txt
 servers.dat
+src/main/java/com
+src/main/java/so101/hyperworldmod
+src/main/java/so101/modfun
+src/main/resources/assets/hyperworldmod
+*.DS_Store
+*/*.DS_Store
+*/*/*.DS_Store
+*/*/*/*.DS_Store
+*/*/*/*/*.DS_Store
 
 # External tool builders
 .externalToolBuilders/

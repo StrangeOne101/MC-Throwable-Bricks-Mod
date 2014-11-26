@@ -1,0 +1,12 @@
+item.brickTNT.name=Explosive Brick
+item.brickChunks.regular.name=Brick Chunks
+item.brickChunks.nether.name=Nether Brick Chunks
+item.brickChunks.unknown.name=Hacked Brick Chunks
+
+death.attack.brick=%1$s was bricked to death
+death.attack.brick.player=%1$s was bricked to death by %1$s
+death.attack.brick.item=%1$s was bricked to death by %1$s using %1$s
+
+entity.throwablebricks.Brick.name=Brick
+entity.throwablebricks.Netherbrick.name=Nether Brick
+entity.throwablebricks.TNTBrick.name=Explosive Brick

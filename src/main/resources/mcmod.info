@@ -1,0 +1,16 @@
+[
+{
+  "modid": "minemapper",
+  "name": "Mine Mapper for Forge",
+  "description": "This mod introduces some basic markers to help in navigating and mapping cave systems and helping remember your way back from adventures.",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "minemapper.stromeon.com": "",
+  "authorList": ["stromhurst", "StrangeOne101"],
+  "credits": "The Forge and FML guys, for making this example",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
