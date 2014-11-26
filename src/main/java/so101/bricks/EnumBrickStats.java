@@ -24,12 +24,17 @@ public enum EnumBrickStats
 	BRONZE("bronze", 0.4F, 0.5F),
 	IRON("iron", 0.48F, 0.45F),
 	GOLD("gold", 0.95F, 0.18F),
-	PLATNIUM("platnium", 1.0F, 0.85F),
+	PLATINUM("platinum", 1.0F, 0.85F),
 	SHINY("shiny", 1.0F, 0.85F),
 	NICKEL("nickel", 0.45F, 0.48F),
 	SILVER("silver", 0.45F, 0.40F),
 	STEEL("steel", 0.58F, 0.6F),
 	TIN("tin", 0.35F, 0.25F),
+	OSMIUM("osmium", 0.4F, 0.48F),
+	BEDROCKIUM("bedrockium", 5F, 99F),
+	ENDERIUM("enderium", 1.0F, 0.8F),
+	ALUMINUM("aluminum", 0.46F, 0.38F),
+	UNSTABLE("unstable", 0.9F, 0.5F),
 	;
 	/**Brick name*/
 	public String brickName;

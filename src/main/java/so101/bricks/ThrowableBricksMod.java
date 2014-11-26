@@ -26,10 +26,10 @@ import cpw.mods.fml.common.registry.GameRegistry;
 @Mod(modid = ThrowableBricksMod.modID, name = "Throwable Bricks Mod", version = ThrowableBricksMod.version)
 public class ThrowableBricksMod 
 {
-	@SidedProxy(clientSide = "so101.bricks.ClientProxy", serverSide = "so101.bricks.CommonProxy")
+	@SidedProxy(clientSide = "so101.bricks.client.ClientProxy", serverSide = "so101.bricks.CommonProxy")
 	public static CommonProxy proxy;
 
-	public static String CHANNEL = "BRICKENTUPDATE";
+	//public static String CHANNEL = "BRICKENTUPDATE";
 	
 	public static final String modID = "throwablebricks";
 	public static final String version = "2.7";

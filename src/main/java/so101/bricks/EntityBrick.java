@@ -22,9 +22,6 @@ import net.minecraftforge.oredict.OreDictionary;
 
 public class EntityBrick extends EntityThrowable
 {
-	/**Type of brick. Should be either REGULAR, NETHER or TNT. Don't expect everything to work if you set this to UNKNOWN. DO NOT USE NOW. Use entityItemStack instead!*/
-	@Deprecated
-	public EnumBricks brickType = EnumBricks.REGULAR;
 	/**Should the brick drop or not. By default, creative sets this to false and all other gamemodes return true. Can be changed with NBT.*/
 	public boolean shouldDrop;
 	/**Size and scale of the brick. WIP - does not work.*/
@@ -39,7 +36,7 @@ public class EntityBrick extends EntityThrowable
 	public EntityBrick(World par1World) 
 	{
 		super(par1World);
-		this.brickType = EnumBricks.REGULAR;
+		//this.brickType = EnumBricks.REGULAR;
 		if (this.getEntityData().hasKey("Scale") && this.getEntityData().getFloat("Scale") != 1.0F)
 		{
 			this.setSize(this.getEntityData().getFloat("Scale"), this.getEntityData().getFloat("Scale"));
@@ -47,14 +44,14 @@ public class EntityBrick extends EntityThrowable
 		init();
 	}
 	
-	@Deprecated
+	/*@Deprecated
 	public EntityBrick(World world, EntityPlayer player, EnumBricks type) 
 	{
 		super(world, player);
 		this.brickType = type;
 		init();
 		this.shouldDrop = !player.capabilities.isCreativeMode;
-	}
+	}*/
 	
 	public EntityBrick(World world, EntityPlayer player, ItemStack brick)
 	{
@@ -110,7 +107,7 @@ public class EntityBrick extends EntityThrowable
 					this.worldObj.playSoundEffect(posX + 0.5D, posY + 0.5D, posZ + 0.5D, blockHit.stepSound.getBreakSound(), 1.0F, 1.0F);
 				}
 				
-				for (int i = 0; i < 32; i++)
+				for (int i = 0; i < 32 && this.worldObj.isRemote; i++)
 				{
 					this.worldObj.spawnParticle("blockcrack_"+Block.getIdFromBlock(blockHit)+"_"+(meta << 12), mop.blockX, mop.blockY, mop.blockZ, this.getRndMinorDouble(), this.getRndMinorDouble(), this.getRndMinorDouble());
 				}
@@ -162,7 +159,7 @@ public class EntityBrick extends EntityThrowable
 				}
 				this.worldObj.spawnEntityInWorld(eitem);
 			}
-			EntityPlayer p = Minecraft.getMinecraft().thePlayer;
+			//EntityPlayer p = Minecraft.getMinecraft().thePlayer;
 			//p.addChatComponentMessage(new ChatComponentText("Vel: " + this.motionX + " " + this.motionY + " " + this.motionZ));
 			//p.addChatComponentMessage(new ChatComponentText("s: " +s+", s1: "+s1 + ", s2: "+s2));
 		}
@@ -174,7 +171,7 @@ public class EntityBrick extends EntityThrowable
 			//p.addChatComponentMessage(new ChatComponentText(s + ": " + this.entityItemStack.getDisplayName()));
 		//}
 		
-		for (int i = 0; i < 8 + (drop == null ? 16 : 0); i++)
+		for (int i = 0; i < 8 + (drop == null ? 16 : 0) && this.worldObj.isRemote; i++)
 		{
 			this.worldObj.spawnParticle("iconcrack_"+Item.itemRegistry.getIDForObject(this.dataWatcher.getWatchableObjectItemStack(16).getItem()), this.posX, this.posY, this.posZ, this.getRndMinorDouble(), this.getRndMinorDouble(), this.getRndMinorDouble());
 		}
@@ -196,14 +193,14 @@ public class EntityBrick extends EntityThrowable
 	@Override
 	public void readFromNBT(NBTTagCompound nbt) 
 	{
-		if (nbt.hasKey("BrickType", 99))
+		/*if (nbt.hasKey("BrickType", 99))
 		{
 			int type = nbt.getInteger("BrickType");
 			if (type == 0) {this.brickType = EnumBricks.REGULAR;}
 			else if (type == 1) {this.brickType = EnumBricks.NETHER;}
 			else if (type == 2) {this.brickType = EnumBricks.TNT;}
 			else {this.brickType = EnumBricks.UNKNOWN;}
-		}
+		}*/
 		
 		if (nbt.hasKey("ShouldDrop", 99))
 		{
@@ -249,10 +246,10 @@ public class EntityBrick extends EntityThrowable
 		nbt.setFloat("Damage", this.damage);
 		nbt.setByte("ExplosionRadius", (byte)explosionSize);
 		nbt.setTag("Item", this.dataWatcher.getWatchableObjectItemStack(16).writeToNBT(new NBTTagCompound()));
-		if (this.brickType == EnumBricks.REGULAR) {nbt.setInteger("BrickType", 0);}
+		/*if (this.brickType == EnumBricks.REGULAR) {nbt.setInteger("BrickType", 0);}
 		else if (this.brickType == EnumBricks.NETHER) {nbt.setInteger("BrickType", 1);}
 		else if (this.brickType == EnumBricks.TNT) {nbt.setInteger("BrickType", 2);}
-		else {nbt.setInteger("BrickType", 0);}
+		else {nbt.setInteger("BrickType", 0);}*/
 		super.writeToNBT(nbt);
 	}
 	
