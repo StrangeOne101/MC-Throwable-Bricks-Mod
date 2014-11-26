@@ -15,6 +15,27 @@ local.properties
 .classpath
 .settings/
 .loadpath
+.gradle/
+build/
+config/
+crash-reports/
+eclipse/
+logs/
+mods/
+resourcepacks/
+saves/
+screenshots/
+build.gradle
+CREDITS-fml.txt
+forge-1.7.10-10.13.0.1180-changelog.txt
+gradlew
+gradlew.bat
+LIESENSE-fml.txt
+MinecraftForge-Credits.txt
+MinecraftForge-License.txt
+options.txt
+READEME.txt
+servers.dat
 
 # External tool builders
 .externalToolBuilders/
