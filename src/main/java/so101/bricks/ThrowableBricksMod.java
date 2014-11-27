@@ -1,5 +1,7 @@
 package so101.bricks;
 
+import java.util.Calendar;
+
 import net.minecraft.block.Block;
 import net.minecraft.entity.EntityList;
 import net.minecraft.entity.player.EntityPlayer;
@@ -32,13 +34,15 @@ public class ThrowableBricksMod
 	//public static String CHANNEL = "BRICKENTUPDATE";
 	
 	public static final String modID = "throwablebricks";
-	public static final String version = "2.7";
+	public static final String version = "3.0 (Aplha 3)";
 	
 	public static final Item brick = Items.brick;
 	public static final Item brickNether = Items.netherbrick;
 	public static final Item brickTNT = new Item().setUnlocalizedName("brickTNT").setTextureName(modID+":brickTNT");
 	public static final Item brickChunks = new ItemBrickChunks().setUnlocalizedName("brickChunks");
-
+	
+	public static final boolean isChristmas = Calendar.getInstance().get(Calendar.MONTH) == 11 && Calendar.getInstance().get(Calendar.DAY_OF_MONTH) == 24;
+	public static final boolean isThanksGiving = Calendar.getInstance().get(Calendar.MONTH) == 11 && Calendar.getInstance().get(Calendar.DAY_OF_MONTH) == 26;
 	
 	@Mod.EventHandler
 	public void preInit(FMLPreInitializationEvent event) 

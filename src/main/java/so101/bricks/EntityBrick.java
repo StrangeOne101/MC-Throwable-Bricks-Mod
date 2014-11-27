@@ -3,6 +3,7 @@ package so101.bricks;
 import java.lang.reflect.Array;
 
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockTNT;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.DataWatcher;
@@ -11,10 +12,13 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.projectile.EntityThrowable;
+import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.potion.Potion;
+import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
@@ -30,6 +34,8 @@ public class EntityBrick extends EntityThrowable
 	public int explosionSize;
 	/**The amount of damage the brick does. Default base is 5. Can increase by distance, force, motion and falling. Can be customized by NBT.*/
 	public float damage;
+	/**To calculate min time before ingot/brick can break*/
+	private int ticksSpawned;
 	
 	protected double[] spawnLoc, highLoc, endLoc;
 	
@@ -74,6 +80,37 @@ public class EntityBrick extends EntityThrowable
 	public void onUpdate() 
 	{
 		super.onUpdate();
+		this.ticksSpawned++;
+		
+		if (this.getEnumType().special == EnumBrickAbilities.BURNING)
+		{
+			for (int i = 0; i < 1 + this.rand.nextInt(3) && this.worldObj.isRemote; i++)
+			{
+				worldObj.spawnParticle("smoke",this.posX, this.posY, this.posZ, (rand.nextDouble()/4)-0.1D, (rand.nextDouble()/4)-0.1D, (rand.nextDouble()/4)-0.1D);
+			}
+		}
+		else if (this.getEnumType().special == EnumBrickAbilities.SPARKLY)
+		{
+			for (int i = 0; i < 1 + this.rand.nextInt(3) && this.worldObj.isRemote; i++)
+			{
+				worldObj.spawnParticle("fireworkSpark",this.posX, this.posY, this.posZ, this.getRndMinorDouble(), this.getRndMinorDouble(), this.getRndMinorDouble());
+			}
+		}
+		else if (this.getEnumType().special == EnumBrickAbilities.REDSTONE)
+		{
+			for (int i = 0; i < 1 + this.rand.nextInt(3) && this.worldObj.isRemote; i++)
+			{
+				worldObj.spawnParticle("reddust",this.posX, this.posY, this.posZ, this.getRndMinorDouble(), this.getRndMinorDouble(), this.getRndMinorDouble());
+			}
+		}
+		else if (this.getEnumType().special == EnumBrickAbilities.ENDER)
+		{
+			for (int i = 0; i < 1 + this.rand.nextInt(3) && this.worldObj.isRemote; i++)
+			{
+				worldObj.spawnParticle("portal",this.posX, this.posY, this.posZ, this.getRndMinorDouble(), this.getRndMinorDouble(), this.getRndMinorDouble());
+			}
+		}
+		
 	}
 
 	@Override
@@ -85,11 +122,20 @@ public class EntityBrick extends EntityThrowable
 		if (mop.entityHit != null && mop.entityHit instanceof EntityLivingBase) //Hit a mob
 		{
 			mop.entityHit.attackEntityFrom(DamageSourceBricks.causeBrickDamage(this, this.getThrower()), this.damage);
+			
+			if (this.getEnumType().special == EnumBrickAbilities.BURNING)
+			{
+				mop.entityHit.setFire((int) (this.getEnumType().abilityScale * 10));
+			}
+			else if (this.getEnumType().special == EnumBrickAbilities.FREEZER && mop.entityHit instanceof EntityLivingBase)
+			{
+				((EntityLivingBase)mop.entityHit).addPotionEffect(new PotionEffect(Potion.moveSlowdown.id, (int)this.getEnumType().abilityScale * 10, 9));
+			}
 		}
 		
 		
 		
-		
+		 
 		/**
 		 * Break blocks
 		 * */
@@ -113,6 +159,36 @@ public class EntityBrick extends EntityThrowable
 				}
 				return;
 			}
+			else if (this.worldObj.getBlock(mop.blockX, mop.blockY, mop.blockZ) instanceof BlockTNT && !this.worldObj.isRemote)
+			{
+				this.worldObj.setBlockToAir(mop.blockX, mop.blockY, mop.blockZ);
+				this.worldObj.createExplosion(this.getThrower() != null ? this.getThrower() : null, mop.blockX + 0.5D, mop.blockY + 0.5D, mop.blockZ + 0.5D, 4, true);
+			}
+			else if (this.getEnumType().special == EnumBrickAbilities.BURNING)
+			{
+				if (this.worldObj.getBlock((int)this.posX, (int)this.posY, (int)this.posZ) == Blocks.air)
+				{
+					if (!this.worldObj.isRemote)
+					{
+						this.worldObj.setBlock((int)this.posX, (int)this.posY, (int)this.posZ, Blocks.fire);
+					}
+				}
+			}
+		}
+		
+		if (this.getEnumType().special == EnumBrickAbilities.BURNING && this.worldObj.isRemote)
+		{
+			for (int i = 0; i < 5 + this.rand.nextInt(7); i++)
+			{
+				worldObj.spawnParticle("smoke",this.posX, this.posY, this.posZ, (rand.nextDouble()/4)-0.1D, (rand.nextDouble()/4)-0.1D, (rand.nextDouble()/4)-0.1D);
+			}
+		}
+		else if (this.getEnumType().special == EnumBrickAbilities.SPARKLY && this.worldObj.isRemote)
+		{
+			for (int i = 0; i < 5 + this.rand.nextInt(7); i++)
+			{
+				worldObj.spawnParticle("fireworksSpark",this.posX, this.posY, this.posZ, (rand.nextDouble()/4)-0.1D, (rand.nextDouble()/4)-0.1D, (rand.nextDouble()/4)-0.1D);
+			}
 		}
 		
 		
@@ -125,10 +201,12 @@ public class EntityBrick extends EntityThrowable
 			double velXZ = Math.abs(this.motionX) + Math.abs(this.motionZ);
 			double velY = Math.abs(this.motionY);
 			
-			float density = EnumBrickStats.getStatsForItem(this.dataWatcher.getWatchableObjectItemStack(16)).density;
+			float density = EnumBricks.getStatsForItem(this.dataWatcher.getWatchableObjectItemStack(16)).density;
 			double maxVelocity = 3 * (density * density) + 0.5;
 			
-			boolean flag = velXZ + velY > maxVelocity;
+			/**If the velocity should break the brick/ingot*/
+			boolean flag = velXZ + velY > Math.abs(maxVelocity);
+			boolean flag1 = this.ticksSpawned > 10;
 			
 			ItemStack item = this.getDataWatcher().getWatchableObjectItemStack(16);
 			drop = item.getItem().equals(Items.brick) ? new ItemStack(ThrowableBricksMod.brickChunks, 1 + this.rand.nextInt(2), 0) : (item.getItem().equals(Items.netherbrick) ? new ItemStack(ThrowableBricksMod.brickChunks, 1 + this.rand.nextInt(2), 1) : null);
@@ -148,16 +226,24 @@ public class EntityBrick extends EntityThrowable
 			
 			if (!this.worldObj.isRemote)
 			{
-				EntityItem eitem;
-				if (flag && drop != null) //If it should break
+				EntityItem eitem = null;
+				if (flag && drop != null && flag1) //If it should break
 				{
 					eitem = new EntityItem(this.worldObj, this.posX, this.posY, this.posZ, drop);
 				}
-				else
+				else if (flag && flag1 && drop == null)
+				{
+					eitem = null;
+				}
+				else if (!flag || !flag1)
 				{
 					eitem = new EntityItem(this.worldObj, this.posX, this.posY, this.posZ, item);
 				}
-				this.worldObj.spawnEntityInWorld(eitem);
+				if (eitem != null)
+				{
+					this.worldObj.spawnEntityInWorld(eitem);
+				}
+				
 			}
 			//EntityPlayer p = Minecraft.getMinecraft().thePlayer;
 			//p.addChatComponentMessage(new ChatComponentText("Vel: " + this.motionX + " " + this.motionY + " " + this.motionZ));
@@ -177,14 +263,15 @@ public class EntityBrick extends EntityThrowable
 		}
 		
 		
-		if (!this.worldObj.isRemote && this.explosionSize > 0)
+		if (!this.worldObj.isRemote && (this.explosionSize > 0 || this.getEnumType().special == EnumBrickAbilities.EXPLOSIVE))
 		{
 			Entity cause = this;
 			if (this.getThrower() != null)
 			{
 				cause = this.getThrower();
 			}
-			this.worldObj.createExplosion(cause, mop.hitVec.xCoord, mop.hitVec.yCoord, mop.hitVec.zCoord, this.explosionSize, true);
+			float explosionSize = this.explosionSize >= 0 ? this.explosionSize : this.getEnumType().abilityScale * 10;
+			this.worldObj.createExplosion(cause, mop.hitVec.xCoord, mop.hitVec.yCoord, mop.hitVec.zCoord, explosionSize, true);
 		}
 		
 		this.setDead();
@@ -268,5 +355,13 @@ public class EntityBrick extends EntityThrowable
         return 0.75F;
     }
 	
+	public ItemStack getItem()
+	{
+		return this.dataWatcher.getWatchableObjectItemStack(16);
+	}
 	
+	public EnumBricks getEnumType()
+	{
+		return EnumBricks.getStatsForItem(this.getItem());
+	}
 }

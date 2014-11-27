@@ -11,7 +11,7 @@ import net.minecraftforge.oredict.OreDictionary;
 public class BrickRegistry 
 {
 	public static List<ItemStack> brickIngotNames = new ArrayList<ItemStack>();
-	public static Map<String, EnumBrickStats> brickStats = new HashMap<String, EnumBrickStats>();
+	public static Map<String, EnumBricks> brickStats = new HashMap<String, EnumBricks>();
 	
 	static
 	{
