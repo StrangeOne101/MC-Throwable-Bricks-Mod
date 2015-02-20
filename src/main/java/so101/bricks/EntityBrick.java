@@ -10,6 +10,7 @@ import net.minecraft.entity.DataWatcher;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
+import net.minecraft.entity.monster.EntitySkeleton;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.projectile.EntityThrowable;
 import net.minecraft.init.Blocks;
@@ -19,6 +20,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
+import net.minecraft.tileentity.TileEntitySkull;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
@@ -33,11 +35,14 @@ public class EntityBrick extends EntityThrowable
 	/**The explosion size or radius for explosive/tnt bricks. Defaults to 4.*/
 	public int explosionSize;
 	/**The amount of damage the brick does. Default base is 5. Can increase by distance, force, motion and falling. Can be customized by NBT.*/
-	public float damage;
+	public float damage = -1;
 	/**To calculate min time before ingot/brick can break*/
 	private int ticksSpawned;
 	
-	protected double[] spawnLoc, highLoc, endLoc;
+	//protected double[] spawnLoc, highLoc, endLoc;
+	
+	/**This is just so bricks don't break within a certain distance if thrown by the player. For algorithm exception reasons.*/
+	public boolean normalPlayerThrow = false;
 	
 	public EntityBrick(World par1World) 
 	{
@@ -66,14 +71,46 @@ public class EntityBrick extends EntityThrowable
 		init();
 		this.shouldDrop = !player.capabilities.isCreativeMode;
 		this.getDataWatcher().updateObject(16, brick);
+		this.getDataWatcher().updateObject(17, Float.valueOf(EnumBricks.getStatsForItem(brick).abilityScale));
+		
+		
 	}
+	
+	public EntityBrick(World world, EntityPlayer player, ItemStack brick, boolean playerThrown) 
+	{
+		this(world, player, brick);
+		
+		//Make thrown bricks go further if player has had a strength potion
+		PotionEffect p = player.getActivePotionEffect(Potion.damageBoost);
+		if (p != null && playerThrown)
+		{
+			int i = p.getAmplifier() > 3 ? 4 : p.getAmplifier();
+			double multiplyer = 1 + (0.2 * (i + 1));
+			this.motionX *= multiplyer;
+			this.motionY *= multiplyer;
+			this.motionZ *= multiplyer;
+		}
+	}
+	
+	public EntityBrick(World world, double x, double y, double z) 
+	{
+		super(world, x, y, z);
+	}
+
+	/**Before entity is created*/
+	protected void entityInit()
+    {
+		super.entityInit();
+		this.dataWatcher.addObject(16, new ItemStack(Items.brick, 1));
+		this.dataWatcher.addObject(17, Float.valueOf(0.0F));
+    }
 	
 	/**Call and initialize basic variables*/
 	public void init() 
 	{
 		this.shouldDrop = true;
 		this.scale = 1.0F;
-		this.damage = 5.5F;
+		//this.damage = 5.5F;
 	}
 	
 	@Override
@@ -93,14 +130,14 @@ public class EntityBrick extends EntityThrowable
 		{
 			for (int i = 0; i < 1 + this.rand.nextInt(3) && this.worldObj.isRemote; i++)
 			{
-				worldObj.spawnParticle("fireworkSpark",this.posX, this.posY, this.posZ, this.getRndMinorDouble(), this.getRndMinorDouble(), this.getRndMinorDouble());
+				worldObj.spawnParticle("fireworksSpark",this.posX, this.posY, this.posZ, (rand.nextDouble()/4)-0.1D, (rand.nextDouble()/4)-0.1D, (rand.nextDouble()/4)-0.1D);
 			}
 		}
 		else if (this.getEnumType().special == EnumBrickAbilities.REDSTONE)
 		{
-			for (int i = 0; i < 1 + this.rand.nextInt(3) && this.worldObj.isRemote; i++)
+			for (int i = 0; i < 1 + this.rand.nextInt(3); i++)
 			{
-				worldObj.spawnParticle("reddust",this.posX, this.posY, this.posZ, this.getRndMinorDouble(), this.getRndMinorDouble(), this.getRndMinorDouble());
+				worldObj.spawnParticle("reddust",this.posX, this.posY, this.posZ, 0.0, 0.0, 0.0);
 			}
 		}
 		else if (this.getEnumType().special == EnumBrickAbilities.ENDER)
@@ -110,18 +147,37 @@ public class EntityBrick extends EntityThrowable
 				worldObj.spawnParticle("portal",this.posX, this.posY, this.posZ, this.getRndMinorDouble(), this.getRndMinorDouble(), this.getRndMinorDouble());
 			}
 		}
+		else if (ThrowableBricksMod.isDay(ThrowableBricksMod.DATE_CHRISTMAS))
+		{
+			for (int i = 0; i < 3 + this.rand.nextInt(7) && this.worldObj.isRemote; i++)
+			{
+				worldObj.spawnParticle("reddust",this.posX + this.getRndMinorDouble(), this.posY + this.getRndMinorDouble(), this.posZ + this.getRndMinorDouble(), 0.0, 0.0, 0.0);
+			}
+			worldObj.spawnParticle("happyVillager",this.posX + this.getRndMinorDouble(), this.posY + this.getRndMinorDouble(), this.posZ + this.getRndMinorDouble(), 0.0, 0.0, 0.0);
+		}
 		
 	}
 
 	@Override
 	protected void onImpact(MovingObjectPosition mop) 
 	{		
+		float dd = 0F;
 		/**
 		 * Damage hit entity
 		 * */
 		if (mop.entityHit != null && mop.entityHit instanceof EntityLivingBase) //Hit a mob
 		{
-			mop.entityHit.attackEntityFrom(DamageSourceBricks.causeBrickDamage(this, this.getThrower()), this.damage);
+			double velXZ = Math.abs(this.motionX) + Math.abs(this.motionZ);
+			double velY = Math.abs(this.motionY);
+			float density = this.getEnumType().density;
+			double maxVelocity = 4 * (density * density) + 0.5;
+			boolean flag = velXZ + velY > Math.abs(maxVelocity * 1.2 + density);
+			
+			double vel = velXZ + velY;
+			float f = ((int)(vel * 10)) / 10;
+			float damage = 4 + (((3 * f) / 10) * density) + (flag ? (3 + rand.nextInt(7)) * density : 0);
+			damage = mop.entityHit instanceof EntitySkeleton ? damage * 2 : damage;
+			mop.entityHit.attackEntityFrom(DamageSourceBricks.causeBrickDamage(this, this.getThrower()), this.damage == -1 ? damage : this.damage);
 			
 			if (this.getEnumType().special == EnumBrickAbilities.BURNING)
 			{
@@ -131,6 +187,7 @@ public class EntityBrick extends EntityThrowable
 			{
 				((EntityLivingBase)mop.entityHit).addPotionEffect(new PotionEffect(Potion.moveSlowdown.id, (int)this.getEnumType().abilityScale * 10, 9));
 			}
+			dd = damage;
 		}
 		
 		
@@ -190,23 +247,62 @@ public class EntityBrick extends EntityThrowable
 				worldObj.spawnParticle("fireworksSpark",this.posX, this.posY, this.posZ, (rand.nextDouble()/4)-0.1D, (rand.nextDouble()/4)-0.1D, (rand.nextDouble()/4)-0.1D);
 			}
 		}
+		else if (this.getEnumType().special == EnumBrickAbilities.ENDER)
+		{
+			float f = -1F;
+			float f1 = this.dataWatcher.getWatchableObjectFloat(17);
+			if (!this.worldObj.isRemote)
+			{
+				f = this.rand.nextFloat();
+			}
+			if (f1 > f && !this.worldObj.isRemote)
+			{
+				this.dataWatcher.updateObject(17, Float.valueOf(f1 - (f / 2)));
+				int x = (int) this.posX;
+				int y = (int) this.posY;
+				int z = (int) this.posZ;
+				int t = 0;
+				while (this.worldObj.getBlock(x, y, z) != Blocks.air && x != (int)this.posX && y != (int)this.posY && z != (int)this.posZ && t < 25)
+				{
+					x += this.rand.nextInt(10) - 5;
+					y += this.rand.nextInt(4) + 3;
+					z += this.rand.nextInt(10) - 5;
+					t++;
+					if (this.worldObj.getBlock(x, y, z) == Blocks.air)
+					{
+						for (int i = 0; i < 5 + this.rand.nextInt(7); i++)
+						{
+							worldObj.spawnParticle("portal",this.posX, this.posY, this.posZ, this.getRndMinorDouble(), this.getRndMinorDouble(), this.getRndMinorDouble());
+						}
+						
+						this.posX = x + 0.5D;
+						this.posY = y + 0.5D;
+						this.posZ = z + 0.5D;
+						this.lastTickPosX = x + 0.5D;
+						this.lastTickPosY = y + 0.5D;
+						this.lastTickPosZ = z + 0.5D;
+						return;
+					}
+				}
+			}
+		}
 		
 		
 		ItemStack drop = null;
 		/**
 		 * Drop brick or brick chunks
 		 * */
-		if (this.shouldDrop && this.explosionSize <= 0)
+		if (this.shouldDrop && this.explosionSize <= 0 && this.getEnumType().special != EnumBrickAbilities.EXPLOSIVE)
 		{
 			double velXZ = Math.abs(this.motionX) + Math.abs(this.motionZ);
 			double velY = Math.abs(this.motionY);
 			
-			float density = EnumBricks.getStatsForItem(this.dataWatcher.getWatchableObjectItemStack(16)).density;
-			double maxVelocity = 3 * (density * density) + 0.5;
+			float density = this.getEnumType().density;
+			double maxVelocity = 4 * (density * density) + 0.5;
 			
 			/**If the velocity should break the brick/ingot*/
-			boolean flag = velXZ + velY > Math.abs(maxVelocity);
-			boolean flag1 = this.ticksSpawned > 10;
+			boolean flag = velXZ + velY > Math.abs(maxVelocity * 1.2 + density) && !(this.getEnumType().special == EnumBrickAbilities.UNBREAKABLE);
+			boolean flag1 = this.normalPlayerThrow ? this.ticksSpawned > 10 : true;
 			
 			ItemStack item = this.getDataWatcher().getWatchableObjectItemStack(16);
 			drop = item.getItem().equals(Items.brick) ? new ItemStack(ThrowableBricksMod.brickChunks, 1 + this.rand.nextInt(2), 0) : (item.getItem().equals(Items.netherbrick) ? new ItemStack(ThrowableBricksMod.brickChunks, 1 + this.rand.nextInt(2), 1) : null);
@@ -244,10 +340,23 @@ public class EntityBrick extends EntityThrowable
 					this.worldObj.spawnEntityInWorld(eitem);
 				}
 				
+				if (this.getEnumType().special == EnumBrickAbilities.EXPLODEONSHATTER && flag && flag1)
+				{
+					this.worldObj.createExplosion(this, this.posX, this.posY, this.posZ, this.getEnumType().abilityScale, ConfigBricks.enableTerrainDamage);
+				}
 			}
-			//EntityPlayer p = Minecraft.getMinecraft().thePlayer;
-			//p.addChatComponentMessage(new ChatComponentText("Vel: " + this.motionX + " " + this.motionY + " " + this.motionZ));
-			//p.addChatComponentMessage(new ChatComponentText("s: " +s+", s1: "+s1 + ", s2: "+s2));
+			if (ThrowableBricksMod.DEBUG && this.getThrower() instanceof EntityPlayer)
+			{
+				EntityPlayer p = (EntityPlayer) this.getThrower();
+				p.addChatComponentMessage(new ChatComponentText("Vel: " + (float)this.motionX + " " + (float)this.motionY + " " + (float)this.motionZ));
+				p.addChatComponentMessage(new ChatComponentText("Enum: " + this.getEnumType().toString()));
+				p.addChatComponentMessage(new ChatComponentText("ItemName: " + this.getItem().getUnlocalizedName()));
+				if (dd != 0F)
+				{
+					p.addChatComponentMessage(new ChatComponentText("Damage: " + dd));
+				}
+			}
+			
 		}
 		
 		//if (this.getThrower() != null && this.getThrower() instanceof EntityPlayer)
@@ -259,7 +368,7 @@ public class EntityBrick extends EntityThrowable
 		
 		for (int i = 0; i < 8 + (drop == null ? 16 : 0) && this.worldObj.isRemote; i++)
 		{
-			this.worldObj.spawnParticle("iconcrack_"+Item.itemRegistry.getIDForObject(this.dataWatcher.getWatchableObjectItemStack(16).getItem()), this.posX, this.posY, this.posZ, this.getRndMinorDouble(), this.getRndMinorDouble(), this.getRndMinorDouble());
+			this.worldObj.spawnParticle("iconcrack_" + Item.itemRegistry.getIDForObject(this.getItem().getItem()) + "_" + this.getItem().getItemDamage(), this.posX, this.posY, this.posZ, this.getRndMinorDouble(), this.getRndMinorDouble(), this.getRndMinorDouble());
 		}
 		
 		
@@ -271,7 +380,7 @@ public class EntityBrick extends EntityThrowable
 				cause = this.getThrower();
 			}
 			float explosionSize = this.explosionSize >= 0 ? this.explosionSize : this.getEnumType().abilityScale * 10;
-			this.worldObj.createExplosion(cause, mop.hitVec.xCoord, mop.hitVec.yCoord, mop.hitVec.zCoord, explosionSize, true);
+			this.worldObj.createExplosion(cause, mop.hitVec.xCoord, mop.hitVec.yCoord, mop.hitVec.zCoord, explosionSize, ConfigBricks.enableTerrainDamage);
 		}
 		
 		this.setDead();
@@ -319,12 +428,6 @@ public class EntityBrick extends EntityThrowable
 		super.readFromNBT(nbt);
 	}
 	
-	protected void entityInit()
-    {
-		super.entityInit();
-		this.dataWatcher.addObject(16, new ItemStack(Items.brick, 1));
-    }
-	
 	@Override
 	public void writeToNBT(NBTTagCompound nbt) 
 	{
@@ -333,10 +436,6 @@ public class EntityBrick extends EntityThrowable
 		nbt.setFloat("Damage", this.damage);
 		nbt.setByte("ExplosionRadius", (byte)explosionSize);
 		nbt.setTag("Item", this.dataWatcher.getWatchableObjectItemStack(16).writeToNBT(new NBTTagCompound()));
-		/*if (this.brickType == EnumBricks.REGULAR) {nbt.setInteger("BrickType", 0);}
-		else if (this.brickType == EnumBricks.NETHER) {nbt.setInteger("BrickType", 1);}
-		else if (this.brickType == EnumBricks.TNT) {nbt.setInteger("BrickType", 2);}
-		else {nbt.setInteger("BrickType", 0);}*/
 		super.writeToNBT(nbt);
 	}
 	

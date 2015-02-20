@@ -4,6 +4,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
 import so101.bricks.EntityBrick;
+import so101.bricks.ThrowableBricksMod;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.client.Minecraft;
@@ -33,7 +34,14 @@ public class RenderBrick extends Render
 		ItemStack item = entity.getDataWatcher().getWatchableObjectItemStack(16);
 		if (item == null)
 		{
-			iconStack = new ItemStack(Items.cake, 1);
+			if (ThrowableBricksMod.isDay(ThrowableBricksMod.DATE_THANKSGIVING))
+			{
+				iconStack = new ItemStack(Items.cooked_chicken, 1);
+			}
+			else
+			{
+				iconStack = new ItemStack(Items.cake, 1);
+			}
 		}
 		else
 		{
@@ -51,7 +59,7 @@ public class RenderBrick extends Render
 	        //this.preRender(entity);
 	        TextureManager texturemanager = Minecraft.getMinecraft().getTextureManager();
 	        ResourceLocation resourcelocation = texturemanager.getResourceLocation(iconStack.getItemSpriteNumber());
-	        TextureAtlasSprite missingno = ((TextureMap)texturemanager.getTexture(resourcelocation)).getAtlasSprite("missingno");
+	        //TextureAtlasSprite missingno = ((TextureMap)texturemanager.getTexture(resourcelocation)).getAtlasSprite("missingno");
 	        this.bindTexture(resourcelocation);
 	        Tessellator tessellator = Tessellator.instance;
 	

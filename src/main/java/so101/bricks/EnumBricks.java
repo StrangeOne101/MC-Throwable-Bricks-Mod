@@ -34,14 +34,18 @@ public enum EnumBricks
 	STEEL( 0.58F, 0.6F),
 	TIN(0.35F, 0.25F),
 	OSMIUM(0.42F, 0.48F),
-	BEDROCKIUM(2F, 99F, EnumBrickAbilities.UNBREAKABLE, 1F),
+	BEDROCKIUM(2F, 0.8F, EnumBrickAbilities.UNBREAKABLE, 1F),
 	ENDERIUM(1.0F, 0.8F, EnumBrickAbilities.ENDER, 1F),
 	ALUMINUM(0.46F, 0.38F),
 	UNSTABLE(0.8F, 0.5F, EnumBrickAbilities.EXPLODEONSHATTER, 0.05F),
+	BLUTONIUM(0.8F, 0.5F, EnumBrickAbilities.EXPLODEONSHATTER, 0.25F),
 	FAIRY(0.4F, 0.5F, EnumBrickAbilities.SPARKLY, 0.5F),
 	INVAR(0.49F, 0.5F),
 	ELECTRUM(0.44F, 0.44F),
 	ELECTRUMFLUX(0.42F, 0.44F, EnumBrickAbilities.REDSTONE, 0.8F),
+	REDSTONEALLOY(0.50F, 0.43F, EnumBrickAbilities.REDSTONE, 0.3F),
+	FIERY(0.45F, 0.49F, EnumBrickAbilities.BURNING, 0.68F),
+	SEAREDBRICK(0.35F, 0.35F),
 	;
 	
 	/**How fast the brick falls. Between 0.0 and 1.0. Default is 0.35*/
@@ -53,9 +57,15 @@ public enum EnumBricks
 	/**Special ability the brick or ingot has*/
 	public EnumBrickAbilities special = EnumBrickAbilities.NONE;
 	/**How great the ability is. 0.0 being nothing, 1.0 being completely*/
-	public float abilityScale;
+	public float abilityScale = 0.0F;
 	
-	public static Map<String, EnumBricks> values = new HashMap<String, EnumBricks>();
+	/**A list of ingots that can be thrown but aren't picked up normally by the mod. Created because enderio ingots didn't contain 
+	 * "ingots" in there unlocalized name*/
+	public static List<String> ingotExceptionsList = new ArrayList<String>();
+	
+	/**A list of items that can be thrown but are not meant to be thrown. Created because other mod issues where the name
+	 * still lets it be picked up as an ingot.*/
+	public static List<String> ingotExceptionsExclude = new ArrayList<String>();
 	
 	EnumBricks(float weight, float density)
 	{
@@ -71,16 +81,33 @@ public enum EnumBricks
 		this.abilityScale = scale;
 	}
 	
-	protected static void addToValues(String brick, EnumBricks enumvalue)
+	static 
 	{
-		if (!brick.equals("-"))
-		{
-			EnumBricks.values.put(brick, enumvalue);
-		}
+		ingotExceptionsList.add("darkSteel");
+		ingotExceptionsList.add("electricalSteel");
+		ingotExceptionsList.add("energeticAlloy");
+		ingotExceptionsList.add("redstoneAlloy");
+		ingotExceptionsList.add("conductiveIron");
+		ingotExceptionsList.add("soularium");
+		
+		ingotExceptionsExclude.add("item.for.cratedBrick");
+		ingotExceptionsExclude.add("item.for.cratedNetherBrick");
+		ingotExceptionsExclude.add("item.steeleafIngot");
+		ingotExceptionsExclude.add("item.tconstruct.MetalPattern.ingot");
 	}
 	
 	public static EnumBricks getStatsForItem(ItemStack item)
 	{
+		boolean flag = false;
+		for (String s : EnumBricks.ingotExceptionsList)
+		{
+			if (item.getUnlocalizedName().contains(s))
+			{
+				flag = true;
+				break;
+			}
+		}
+		
 		if (item.getUnlocalizedName().toLowerCase().contains("brick"))
 		{
 			if (item.getItem().equals(Items.netherbrick))  {  return NETHERBRICK;  }
@@ -90,14 +117,18 @@ public enum EnumBricks
 				return BRICK;
 			}
 		}
-		else if (item.getUnlocalizedName().toLowerCase().contains("ingot"))
+		else if ((item.getUnlocalizedName().toLowerCase().contains("ingot") && !item.getUnlocalizedName().toLowerCase().contains("nugget")) || flag)
 		{
-			String s = OreDictionary.getOreName(Item.getIdFromItem(item.getItem()));
+			String s = OreDictionary.getOreName(OreDictionary.getOreID(item));
 			if (s.startsWith("ingot"))
 			{
 				String s1 = s.replaceFirst("ingot", "");
 				
-				List l = Arrays.asList(BRICK.getDeclaringClass().getEnumConstants());
+				List<EnumBricks> l = new ArrayList<EnumBricks>();
+				for (EnumBricks b : BRICK.getDeclaringClass().getEnumConstants())
+				{
+					l.add(b);
+				}
 				for (int i = 0; i < l.size(); i++)
 				{
 					if (l.get(i).toString().toLowerCase().equals(s1.toLowerCase()))
@@ -105,8 +136,13 @@ public enum EnumBricks
 						return (EnumBricks) l.get(i);
 					}	
 				}
-				return IRON;
+				
 			}
+			else if (item.getUnlocalizedName().toLowerCase().contains("bedrockium"))
+			{
+				return BEDROCKIUM;
+			}
+			return IRON;
 		}
 		
 		return ITEM;
